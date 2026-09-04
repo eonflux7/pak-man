@@ -20,8 +20,8 @@ zlib-compressed `PAKC` archives for retail PC, PlayStation 2, and Xbox.
 - Safe temporary output and verification before a new archive is committed.
 - Companion CLI for automation.
 
-The writer targets retail archives (`version 5`) for PC (`platform 1`), PS2
-(`platform 2`), and Xbox (`platform 3`). See
+The writer targets retail PC (`version 5`, `platform 1`), PS2 (`version 4`,
+`platform 2`), and Xbox (`version 4`, `platform 3`) archives. See
 [`docs/FORMAT.md`](docs/FORMAT.md) for the reverse-engineered layout.
 
 ## Build

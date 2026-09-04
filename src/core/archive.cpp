@@ -19,8 +19,13 @@ namespace fs = std::filesystem;
 namespace pakman {
 namespace {
 
-constexpr std::uint32_t retail_version = 5;
+constexpr std::uint32_t pc_retail_version = 5;
+constexpr std::uint32_t console_retail_version = 4;
 constexpr std::uint32_t retail_offset_correction = 13;
+
+std::uint32_t version_for(Platform platform) {
+    return platform == Platform::pc ? pc_retail_version : console_retail_version;
+}
 
 [[noreturn]] void fail(const std::string& message) { throw std::runtime_error(message); }
 
@@ -214,11 +219,11 @@ Archive Archive::open(const fs::path& path) {
     a.version_ = read_le<std::uint32_t>(in);
     a.platform_ = read_le<std::uint32_t>(in);
     auto count = read_le<std::uint32_t>(in);
-    if (a.version_ != retail_version ||
-        (a.platform_ != static_cast<std::uint32_t>(Platform::pc) &&
-         a.platform_ != static_cast<std::uint32_t>(Platform::ps2) &&
-         a.platform_ != static_cast<std::uint32_t>(Platform::xbox)))
-        fail("Only retail PAK v5 for PC, PS2, or Xbox is supported");
+    auto platform = static_cast<Platform>(a.platform_);
+    bool supported = (platform == Platform::pc && a.version_ == pc_retail_version) ||
+                     ((platform == Platform::ps2 || platform == Platform::xbox) &&
+                      a.version_ == console_retail_version);
+    if (!supported) fail("Only retail PC v5 and PS2/Xbox v4 PAK archives are supported");
     auto archive_size = fs::file_size(path);
     if (count > archive_size / 17) fail("Impossible archive entry count");
     a.entries_.reserve(count);
@@ -343,7 +348,7 @@ void create_archive(const fs::path& source, const fs::path& destination,
         std::ofstream out(temp, std::ios::binary | std::ios::trunc);
         if (!out) fail("Cannot create temporary archive");
         out.write(options.type == ArchiveType::stored ? "PAKA" : "PAKC", 4);
-        write_le<std::uint32_t>(out, retail_version); write_le<std::uint32_t>(out, platform);
+        write_le<std::uint32_t>(out, version_for(options.platform)); write_le<std::uint32_t>(out, platform);
         if (files.size() > std::numeric_limits<std::uint32_t>::max()) fail("Too many source files");
         write_le<std::uint32_t>(out, static_cast<std::uint32_t>(files.size()));
         for (auto& f : files) {

@@ -57,13 +57,14 @@ uses 64-bit file APIs.
 |---:|---:|---|---|
 | `0x00` | 3 | bytes | ASCII `PAK` |
 | `0x03` | 1 | byte | `A` for stored or `C` for compressed |
-| `0x04` | 4 | `uint32` | Version; retail is `5` |
+| `0x04` | 4 | `uint32` | Version; retail PC is `5`, retail consoles use `4` |
 | `0x08` | 4 | `uint32` | Platform; PC is `1`, PS2 is `2`, Xbox is `3` |
 | `0x0c` | 4 | `uint32` | Entry count |
 
-Version values documented by CommDevToolkit are prototype `3`, demo `4`, and
-retail `5`. The writer emits retail PC (`5`, `1`), PS2 (`5`, `2`), or Xbox
-(`5`, `3`) archives. Prototype and demo formats remain unsupported.
+Version values documented by CommDevToolkit are prototype `3`, demo/console
+`4`, and retail PC `5`. The writer emits retail PC (`5`, `1`), PS2 (`4`, `2`),
+or Xbox (`4`, `3`) archives. The Xbox combination and layout were checked
+against a retail archive; prototype and PC demo formats remain unsupported.
 
 ### Index entry
 
@@ -149,7 +150,8 @@ the needed `deflateInit2`/`inflate` APIs.
 
 An archive is valid for v1 only when all of the following hold:
 
-1. Magic is `PAKA` or `PAKC`, version is `5`, and platform is `1`, `2`, or `3`.
+1. Magic is `PAKA` or `PAKC`, and version/platform is retail PC (`5`, `1`),
+   PS2 (`4`, `2`), or Xbox (`4`, `3`).
 2. The complete index fits in the file; paths are NUL-terminated and can be
    decoded as Windows-1252.
 3. Corrected offsets are monotonic and every physical record lies within the
@@ -169,9 +171,10 @@ An archive is valid for v1 only when all of the following hold:
 - The game has not yet been manually smoke-tested with a newly generated
   `PAKC`. Automated structural and semantic tests can establish format
   correctness, but a one-time in-game load test should be a release gate.
-- Retail console output follows the documented little-endian v5 layout and
-  offset correction, but still needs validation against PS2/Xbox retail fixtures
-  and an in-game smoke test. Prototype and demo formats remain outside scope.
+- Retail console output follows the documented little-endian v4 layout and
+  offset correction. Xbox input is fixture-validated; PS2 still needs a retail
+  fixture, and generated output needs in-game smoke tests. Prototype and PC demo
+  formats remain outside scope.
 - The engine's lookup rule for truly different duplicate entries is not proven.
   Preserve order and duplicates in manifests; do not silently invent a winner.
 - Timestamps appear to be creation times in the reference implementation, but

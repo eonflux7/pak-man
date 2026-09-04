@@ -27,7 +27,7 @@ int main() {
                 pakman::create_archive(root / "input", pak, {.type = type, .platform = platform});
                 auto archive = pakman::Archive::open(pak);
                 assert(archive.type() == type);
-                assert(archive.version() == 5);
+                assert(archive.version() == (platform == pakman::Platform::pc ? 5u : 4u));
                 assert(archive.platform() == static_cast<std::uint32_t>(platform));
                 assert(archive.entries().size() == 3);
                 auto report = archive.verify(true);
