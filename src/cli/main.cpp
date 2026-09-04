@@ -14,7 +14,8 @@ static void usage() {
         "  pakman-cli list <archive.pak>\n"
         "  pakman-cli verify <archive.pak> [--quick]\n"
         "  pakman-cli extract <archive.pak> -o <directory> [--overwrite]\n"
-        "  pakman-cli create <directory> -o <archive.pak> [--type stored|compressed]\n";
+        "  pakman-cli create <directory> -o <archive.pak> [--type stored|compressed]\n"
+        "                    [--platform pc|ps2|xbox]\n";
 }
 
 static fs::path option_value(int argc, char** argv, std::string_view option) {
@@ -29,7 +30,8 @@ int main(int argc, char** argv) {
         if (command == "list") {
             auto archive = pakman::Archive::open(fs::u8path(argv[2]));
             std::cout << pakman::type_name(archive.type()) << ", version " << archive.version()
-                      << ", platform " << archive.platform() << ", " << archive.entries().size() << " entries\n";
+                      << ", " << pakman::platform_name(static_cast<pakman::Platform>(archive.platform()))
+                      << " (platform " << archive.platform() << "), " << archive.entries().size() << " entries\n";
             std::cout << "      Original       Stored  Path\n";
             for (auto const& e : archive.entries())
                 std::cout << std::setw(14) << e.original_size << std::setw(13) << e.stored_size << "  " << e.path_utf8 << '\n';
@@ -63,11 +65,15 @@ int main(int argc, char** argv) {
             auto type = option_value(argc, argv, "--type").string();
             if (type == "compressed") options.type = pakman::ArchiveType::compressed;
             else if (!type.empty() && type != "stored") { usage(); return 1; }
+            auto platform = option_value(argc, argv, "--platform").string();
+            if (platform == "ps2") options.platform = pakman::Platform::ps2;
+            else if (platform == "xbox") options.platform = pakman::Platform::xbox;
+            else if (!platform.empty() && platform != "pc") { usage(); return 1; }
             pakman::create_archive(fs::u8path(argv[2]), output, options, [](auto done, auto total, auto current) {
                 std::cerr << "\rPacked " << done << '/' << total << "  " << current.substr(0, 60) << "          ";
                 return true;
             });
-            std::cerr << "\nCreated " << output.string() << '\n';
+            std::cerr << "\nCreated " << pakman::platform_name(options.platform) << " archive " << output.string() << '\n';
         } else { usage(); return 1; }
         return 0;
     } catch (std::exception const& e) {
@@ -75,4 +81,3 @@ int main(int argc, char** argv) {
         return 2;
     }
 }
-

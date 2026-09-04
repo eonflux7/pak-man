@@ -161,6 +161,7 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR command_line, int) {
     char filter[256]{};
     std::string status = "Ready";
     bool compressed_create = false;
+    int create_platform = 0;
     std::string current_directory;
     std::vector<std::string> back_history;
     std::vector<std::string> forward_history;
@@ -206,12 +207,16 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR command_line, int) {
                 auto target = dialog(hwnd, false, true);
                 if (!target.empty()) try {
                     status = "Creating archive...";
-                    pakman::create_archive(source, target, {.type = compressed_create ? pakman::ArchiveType::compressed : pakman::ArchiveType::stored});
+                    pakman::create_archive(source, target,
+                        {.type = compressed_create ? pakman::ArchiveType::compressed : pakman::ArchiveType::stored,
+                         .platform = static_cast<pakman::Platform>(create_platform + 1)});
                     status = "Created " + utf8(target); open_archive(target);
                 } catch (std::exception const& e) { error_box(hwnd, e); status = "Create failed"; }
             }
         }
         ImGui::SameLine(); ImGui::Checkbox("Compressed PAKC", &compressed_create);
+        ImGui::SameLine(); ImGui::SetNextItemWidth(90.0f);
+        ImGui::Combo("Platform", &create_platform, "PC\0PS2\0Xbox\0");
         std::size_t selected_count = 0;
         if (archive) {
             ImGui::SameLine();
@@ -228,7 +233,8 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR command_line, int) {
             }
             ImGui::Separator();
             auto archive_path = utf8(archive->path());
-            ImGui::Text("%s | v%u PC | %zu entries | %s", pakman::type_name(archive->type()).c_str(), archive->version(), archive->entries().size(), archive_path.c_str());
+            auto platform = pakman::platform_name(static_cast<pakman::Platform>(archive->platform()));
+            ImGui::Text("%s | v%u %s | %zu entries | %s", pakman::type_name(archive->type()).c_str(), archive->version(), platform.c_str(), archive->entries().size(), archive_path.c_str());
             // Explorer-style navigation bar.
             ImGui::BeginDisabled(back_history.empty());
             if (ImGui::Button("<")) { forward_history.push_back(current_directory); auto target = back_history.back(); back_history.pop_back(); current_directory = std::move(target); clear_selection(); }

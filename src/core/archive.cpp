@@ -19,6 +19,9 @@ namespace fs = std::filesystem;
 namespace pakman {
 namespace {
 
+constexpr std::uint32_t retail_version = 5;
+constexpr std::uint32_t retail_offset_correction = 13;
+
 [[noreturn]] void fail(const std::string& message) { throw std::runtime_error(message); }
 
 template<class T> T read_le(std::istream& in) {
@@ -211,7 +214,11 @@ Archive Archive::open(const fs::path& path) {
     a.version_ = read_le<std::uint32_t>(in);
     a.platform_ = read_le<std::uint32_t>(in);
     auto count = read_le<std::uint32_t>(in);
-    if (a.version_ != 5 || a.platform_ != 1) fail("Only retail PC PAK v5/platform 1 is supported");
+    if (a.version_ != retail_version ||
+        (a.platform_ != static_cast<std::uint32_t>(Platform::pc) &&
+         a.platform_ != static_cast<std::uint32_t>(Platform::ps2) &&
+         a.platform_ != static_cast<std::uint32_t>(Platform::xbox)))
+        fail("Only retail PAK v5 for PC, PS2, or Xbox is supported");
     auto archive_size = fs::file_size(path);
     if (count > archive_size / 17) fail("Impossible archive entry count");
     a.entries_.reserve(count);
@@ -235,10 +242,10 @@ Archive Archive::open(const fs::path& path) {
     a.data_base_ = static_cast<std::uint64_t>(pos);
     for (std::size_t i = 0; i < a.entries_.size(); ++i) {
         auto& e = a.entries_[i];
-        if (e.logical_offset < 13) fail("Invalid retail PC entry offset");
-        e.physical_offset = a.data_base_ + e.logical_offset - 13;
+        if (e.logical_offset < retail_offset_correction) fail("Invalid retail entry offset");
+        e.physical_offset = a.data_base_ + e.logical_offset - retail_offset_correction;
         auto next = i + 1 < a.entries_.size()
-                        ? a.data_base_ + a.entries_[i + 1].logical_offset - 13
+                        ? a.data_base_ + a.entries_[i + 1].logical_offset - retail_offset_correction
                         : archive_size;
         if (e.physical_offset < a.data_base_ || next < e.physical_offset || next > archive_size)
             fail("Archive entry offset is out of bounds");
@@ -313,6 +320,10 @@ void create_archive(const fs::path& source, const fs::path& destination,
                     const CreateOptions& options, Progress progress) {
     if (!fs::is_directory(source)) fail("Source is not a directory");
     if (fs::exists(destination)) fail("Destination already exists");
+    auto platform = static_cast<std::uint32_t>(options.platform);
+    if (options.platform != Platform::pc && options.platform != Platform::ps2 &&
+        options.platform != Platform::xbox)
+        fail("Unsupported archive platform");
     struct Source { fs::path disk; std::string name; std::vector<std::uint8_t> bytes; std::uint32_t size; std::uint64_t time; std::streampos patch; };
     std::vector<Source> files;
     for (auto const& item : fs::recursive_directory_iterator(source, fs::directory_options::skip_permission_denied)) {
@@ -332,7 +343,7 @@ void create_archive(const fs::path& source, const fs::path& destination,
         std::ofstream out(temp, std::ios::binary | std::ios::trunc);
         if (!out) fail("Cannot create temporary archive");
         out.write(options.type == ArchiveType::stored ? "PAKA" : "PAKC", 4);
-        write_le<std::uint32_t>(out, 5); write_le<std::uint32_t>(out, 1);
+        write_le<std::uint32_t>(out, retail_version); write_le<std::uint32_t>(out, platform);
         if (files.size() > std::numeric_limits<std::uint32_t>::max()) fail("Too many source files");
         write_le<std::uint32_t>(out, static_cast<std::uint32_t>(files.size()));
         for (auto& f : files) {
@@ -343,7 +354,7 @@ void create_archive(const fs::path& source, const fs::path& destination,
         std::array<unsigned char, 4096> buffer{};
         for (std::size_t i = 0; i < files.size(); ++i) {
             auto physical = static_cast<std::uint64_t>(out.tellp());
-            auto logical64 = physical - data_base + 13;
+            auto logical64 = physical - data_base + retail_offset_correction;
             if (logical64 > std::numeric_limits<std::uint32_t>::max()) fail("Archive offsets exceed the PAK 32-bit limit");
             auto resume = out.tellp(); out.seekp(files[i].patch); write_le<std::uint32_t>(out, static_cast<std::uint32_t>(logical64)); out.seekp(resume);
             std::ifstream input(files[i].disk, std::ios::binary);
@@ -370,5 +381,14 @@ void create_archive(const fs::path& source, const fs::path& destination,
 }
 
 std::string type_name(ArchiveType type) { return type == ArchiveType::stored ? "PAKA (stored)" : "PAKC (compressed)"; }
+
+std::string platform_name(Platform platform) {
+    switch (platform) {
+    case Platform::pc: return "PC";
+    case Platform::ps2: return "PS2";
+    case Platform::xbox: return "Xbox";
+    }
+    return "Unknown";
+}
 
 } // namespace pakman

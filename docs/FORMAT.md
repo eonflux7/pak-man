@@ -62,9 +62,8 @@ uses 64-bit file APIs.
 | `0x0c` | 4 | `uint32` | Entry count |
 
 Version values documented by CommDevToolkit are prototype `3`, demo `4`, and
-retail `5`. The v1 writer should intentionally emit only retail PC (`5`, `1`).
-The reader may recognize other combinations but should label them unsupported
-until fixtures are available.
+retail `5`. The writer emits retail PC (`5`, `1`), PS2 (`5`, `2`), or Xbox
+(`5`, `3`) archives. Prototype and demo formats remain unsupported.
 
 ### Index entry
 
@@ -77,7 +76,7 @@ The header is followed immediately by `entry_count` variable-length records:
 | 4 | `uint32` | Original, uncompressed file length |
 | 8 | `FILETIME` | UTC Windows file time (100 ns ticks since 1601-01-01) |
 
-`data_base` is the byte immediately after the final index entry. For retail PC
+`data_base` is the byte immediately after the final index entry. For retail
 archives, the physical start of an entry is:
 
 ```text
@@ -85,8 +84,9 @@ physical_position = data_base + entry.offset - 13
 ```
 
 The first retail entry therefore normally has offset `13`. CommDevToolkit
-documents a correction of `0` for PC demo archives and selected corrections for
-console builds; these should not be generalized without samples.
+documents a correction of `0` for PC demo and PS2 prototype archives and `13`
+for other documented combinations. Prototype and demo writing is intentionally
+out of scope.
 
 Paths must be retained as original encoded bytes as well as decoded UTF-8 text.
 This makes lossless manifest round trips possible and avoids dependence on the
@@ -149,7 +149,7 @@ the needed `deflateInit2`/`inflate` APIs.
 
 An archive is valid for v1 only when all of the following hold:
 
-1. Magic is `PAKA` or `PAKC`, version is `5`, and platform is `1`.
+1. Magic is `PAKA` or `PAKC`, version is `5`, and platform is `1`, `2`, or `3`.
 2. The complete index fits in the file; paths are NUL-terminated and can be
    decoded as Windows-1252.
 3. Corrected offsets are monotonic and every physical record lies within the
@@ -169,11 +169,11 @@ An archive is valid for v1 only when all of the following hold:
 - The game has not yet been manually smoke-tested with a newly generated
   `PAKC`. Automated structural and semantic tests can establish format
   correctness, but a one-time in-game load test should be a release gate.
-- Console/prototype/demo offset and endian behavior is outside v1 because the
-  local fixtures are retail PC only.
+- Retail console output follows the documented little-endian v5 layout and
+  offset correction, but still needs validation against PS2/Xbox retail fixtures
+  and an in-game smoke test. Prototype and demo formats remain outside scope.
 - The engine's lookup rule for truly different duplicate entries is not proven.
   Preserve order and duplicates in manifests; do not silently invent a winner.
 - Timestamps appear to be creation times in the reference implementation, but
   the game likely does not require them. Preserve original ticks from manifests;
   for new folders, use last-write UTC and document the fallback.
-

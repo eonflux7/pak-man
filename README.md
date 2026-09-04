@@ -1,8 +1,8 @@
 # pak-man
 
-Windows archive manager for the PC version of **Commandos: Strike Force**.
+Windows archive manager for **Commandos: Strike Force**.
 It can browse, verify, extract, and create both stored `PAKA` and
-zlib-compressed `PAKC` archives.
+zlib-compressed `PAKC` archives for retail PC, PlayStation 2, and Xbox.
 
 ![Windows](https://img.shields.io/badge/platform-Windows-0078D4)
 ![C++20](https://img.shields.io/badge/C%2B%2B-20-00599C)
@@ -20,7 +20,8 @@ zlib-compressed `PAKC` archives.
 - Safe temporary output and verification before a new archive is committed.
 - Companion CLI for automation.
 
-The writer targets retail PC archives (`version 5`, `platform 1`). See
+The writer targets retail archives (`version 5`) for PC (`platform 1`), PS2
+(`platform 2`), and Xbox (`platform 3`). See
 [`docs/FORMAT.md`](docs/FORMAT.md) for the reverse-engineered layout.
 
 ## Build
@@ -57,11 +58,12 @@ cmake --install build --config Release --prefix portable
 pakman-cli list archive.pak
 pakman-cli verify archive.pak [--quick]
 pakman-cli extract archive.pak -o directory [--overwrite]
-pakman-cli create directory -o archive.pak [--type stored|compressed]
+pakman-cli create directory -o archive.pak [--type stored|compressed] [--platform pc|ps2|xbox]
 ```
 
 Archive creation refuses to overwrite an existing destination. Back up game
-files before installing a modified archive.
+files before installing a modified archive. PC is the default platform when
+`--platform` is omitted.
 
 ## License
 

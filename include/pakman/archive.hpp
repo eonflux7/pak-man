@@ -10,6 +10,7 @@
 namespace pakman {
 
 enum class ArchiveType { stored, compressed };
+enum class Platform : std::uint32_t { pc = 1, ps2 = 2, xbox = 3 };
 
 struct Entry {
     std::string path_utf8;
@@ -55,6 +56,7 @@ private:
 
 struct CreateOptions {
     ArchiveType type{ArchiveType::stored};
+    Platform platform{Platform::pc};
     bool deterministic{true};
 };
 
@@ -63,6 +65,6 @@ void create_archive(const std::filesystem::path& source_directory,
                     const CreateOptions& options = {}, Progress progress = {});
 
 std::string type_name(ArchiveType type);
+std::string platform_name(Platform platform);
 
 } // namespace pakman
-
