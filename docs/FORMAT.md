@@ -89,6 +89,17 @@ documents a correction of `0` for PC demo and PS2 prototype archives and `13`
 for other documented combinations. Prototype and demo writing is intentionally
 out of scope.
 
+### Retail console fixture survey
+
+The retail console layout was checked against `Ambush.pak` fixtures from both
+platforms. Both use `PAKC`, version `4`, little-endian integers, a first logical
+offset of `13`, 4 KiB zlib blocks, and the same per-file zero trailer as PC.
+
+| Platform | Header platform | Entries | Original bytes | Stored record bytes | Blocks |
+|---|---:|---:|---:|---:|---:|
+| PS2 | `2` | 559 | 18,388,175 | 9,529,773 | 4,773 |
+| Xbox | `3` | 804 | 22,677,036 | 12,291,394 | 5,944 |
+
 Paths must be retained as original encoded bytes as well as decoded UTF-8 text.
 This makes lossless manifest round trips possible and avoids dependence on the
 machine's active Windows code page. Observed non-ASCII names use byte `0xF1`
@@ -172,9 +183,9 @@ An archive is valid for v1 only when all of the following hold:
   `PAKC`. Automated structural and semantic tests can establish format
   correctness, but a one-time in-game load test should be a release gate.
 - Retail console output follows the documented little-endian v4 layout and
-  offset correction. Xbox input is fixture-validated; PS2 still needs a retail
-  fixture, and generated output needs in-game smoke tests. Prototype and PC demo
-  formats remain outside scope.
+  offset correction. PS2 and Xbox input are fixture-validated; generated output
+  still needs in-game smoke tests. Prototype and PC demo formats remain outside
+  scope.
 - The engine's lookup rule for truly different duplicate entries is not proven.
   Preserve order and duplicates in manifests; do not silently invent a winner.
 - Timestamps appear to be creation times in the reference implementation, but
