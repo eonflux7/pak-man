@@ -27,6 +27,11 @@ static std::string utf8(const std::wstring& w) {
     std::string s(n, '\0'); WideCharToMultiByte(CP_UTF8, 0, w.data(), static_cast<int>(w.size()), s.data(), n, nullptr, nullptr); return s;
 }
 
+static std::string utf8(const fs::path& path) {
+    auto text = path.generic_u8string();
+    return {reinterpret_cast<const char*>(text.data()), text.size()};
+}
+
 static fs::path dialog(HWND owner, bool folder, bool save = false) {
     IFileDialog* d = nullptr;
     HRESULT hr = CoCreateInstance(save ? CLSID_FileSaveDialog : CLSID_FileOpenDialog, nullptr,
@@ -141,7 +146,7 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR command_line, int) {
     ImGui_ImplWin32_EnableDpiAwareness();
     WNDCLASSEXW wc{sizeof(wc), CS_CLASSDC, wnd_proc, 0, 0, instance, nullptr, nullptr, nullptr, nullptr, L"pak-man", nullptr};
     RegisterClassExW(&wc);
-    HWND hwnd = CreateWindowW(wc.lpszClassName, L"pak-man — Commandos: Strike Force archives", WS_OVERLAPPEDWINDOW,
+    HWND hwnd = CreateWindowW(wc.lpszClassName, L"pak-man", WS_OVERLAPPEDWINDOW,
                               100, 100, 1200, 760, nullptr, nullptr, wc.hInstance, nullptr);
     if (!create_device(hwnd)) { cleanup_device(); UnregisterClassW(wc.lpszClassName, instance); return 1; }
     ShowWindow(hwnd, SW_SHOWDEFAULT); UpdateWindow(hwnd);
@@ -175,7 +180,7 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR command_line, int) {
             archive = std::make_unique<pakman::Archive>(pakman::Archive::open(p));
             selected.assign(archive->entries().size(), false);
             current_directory.clear(); back_history.clear(); forward_history.clear(); selection_anchor = -1;
-            status = "Opened " + p.string();
+            status = "Opened " + utf8(p);
         }
         catch (std::exception const& e) { error_box(hwnd, e); }
     };
@@ -202,7 +207,7 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR command_line, int) {
                 if (!target.empty()) try {
                     status = "Creating archive...";
                     pakman::create_archive(source, target, {.type = compressed_create ? pakman::ArchiveType::compressed : pakman::ArchiveType::stored});
-                    status = "Created " + target.string(); open_archive(target);
+                    status = "Created " + utf8(target); open_archive(target);
                 } catch (std::exception const& e) { error_box(hwnd, e); status = "Create failed"; }
             }
         }
@@ -214,7 +219,7 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR command_line, int) {
             ImGui::SameLine();
             if (ImGui::Button("Extract all...")) {
                 auto folder = dialog(hwnd, true);
-                if (!folder.empty()) try { archive->extract(folder); status = "Extracted to " + folder.string(); } catch (std::exception const& e) { error_box(hwnd, e); status = "Extraction failed"; }
+                if (!folder.empty()) try { archive->extract(folder); status = "Extracted to " + utf8(folder); } catch (std::exception const& e) { error_box(hwnd, e); status = "Extraction failed"; }
             }
             ImGui::SameLine();
             if (ImGui::Button("Extract selected...")) {
@@ -222,7 +227,8 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR command_line, int) {
                 if (!ids.empty()) { auto folder = dialog(hwnd, true); if (!folder.empty()) try { archive->extract(folder, ids); status = "Extracted selected files"; } catch (std::exception const& e) { error_box(hwnd, e); } }
             }
             ImGui::Separator();
-            ImGui::Text("%s | v%u PC | %zu entries | %s", pakman::type_name(archive->type()).c_str(), archive->version(), archive->entries().size(), archive->path().string().c_str());
+            auto archive_path = utf8(archive->path());
+            ImGui::Text("%s | v%u PC | %zu entries | %s", pakman::type_name(archive->type()).c_str(), archive->version(), archive->entries().size(), archive_path.c_str());
             // Explorer-style navigation bar.
             ImGui::BeginDisabled(back_history.empty());
             if (ImGui::Button("<")) { forward_history.push_back(current_directory); auto target = back_history.back(); back_history.pop_back(); current_directory = std::move(target); clear_selection(); }

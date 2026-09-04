@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.24)
-project(pak_man VERSION 0.1.0 LANGUAGES C CXX)
+project(pak_man VERSION 0.1.1 LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -32,6 +32,9 @@ endif()
 add_executable(pakman_cli src/cli/main.cpp)
 target_link_libraries(pakman_cli PRIVATE pakman_core)
 set_target_properties(pakman_cli PROPERTIES OUTPUT_NAME pakman-cli)
+if(MSVC)
+  target_compile_options(pakman_cli PRIVATE /utf-8)
+endif()
 
 add_library(imgui_lib STATIC
   ${imgui_SOURCE_DIR}/imgui.cpp
@@ -46,11 +49,17 @@ target_compile_definitions(imgui_lib PUBLIC UNICODE _UNICODE NOMINMAX WIN32_LEAN
 add_executable(pakman WIN32 src/gui/main.cpp)
 target_link_libraries(pakman PRIVATE pakman_core imgui_lib d3d11 dxgi shell32 ole32)
 target_compile_definitions(pakman PRIVATE UNICODE _UNICODE NOMINMAX WIN32_LEAN_AND_MEAN)
+if(MSVC)
+  target_compile_options(pakman PRIVATE /utf-8)
+endif()
 
 include(CTest)
 if(BUILD_TESTING)
   add_executable(pakman_tests tests/test_roundtrip.cpp)
   target_link_libraries(pakman_tests PRIVATE pakman_core)
+  if(MSVC)
+    target_compile_options(pakman_tests PRIVATE /utf-8)
+  endif()
   add_test(NAME pakman_roundtrip COMMAND pakman_tests)
 endif()
 

@@ -63,6 +63,11 @@ std::string cp1252_to_utf8(std::span<const std::uint8_t> bytes) {
     return out;
 }
 
+std::string path_to_utf8(const fs::path& path) {
+    auto text = path.generic_u8string();
+    return {reinterpret_cast<const char*>(text.data()), text.size()};
+}
+
 std::vector<std::uint8_t> utf8_to_cp1252(std::string_view text) {
     int wn = MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, text.data(), static_cast<int>(text.size()), nullptr, 0);
     if (!wn) fail("Invalid UTF-8 file name");
@@ -275,7 +280,7 @@ void Archive::extract(const fs::path& destination, std::span<const std::size_t> 
         if (indices[k] >= entries_.size()) fail("Invalid selected entry index");
         auto const& e = entries_[indices[k]];
         auto rel = safe_relative(e.path_utf8);
-        auto key = lower_ascii(rel.generic_string());
+        auto key = lower_ascii(path_to_utf8(rel));
         auto prior = collisions.find(key);
         if (prior != collisions.end()) {
             auto crc = stream_entry(type_, in, e, nullptr, false, blocks);
@@ -284,16 +289,16 @@ void Archive::extract(const fs::path& destination, std::span<const std::size_t> 
         } else {
             auto target = destination / rel;
             fs::create_directories(target.parent_path());
-            if (fs::exists(target) && !overwrite) fail("Output file already exists: " + target.string());
+            if (fs::exists(target) && !overwrite) fail("Output file already exists: " + path_to_utf8(target));
             auto temp = target; temp += L".pakman.tmp";
             std::error_code ec; fs::remove(temp, ec);
             std::uint32_t crc{};
             try {
                 std::ofstream out(temp, std::ios::binary | std::ios::trunc);
-                if (!out) fail("Cannot create output file: " + temp.string());
+                if (!out) fail("Cannot create output file: " + path_to_utf8(temp));
                 crc = stream_entry(type_, in, e, &out, false, blocks);
                 out.close();
-                if (!out) fail("Failed closing output file: " + temp.string());
+                if (!out) fail("Failed closing output file: " + path_to_utf8(temp));
                 if (!MoveFileExW(temp.c_str(), target.c_str(), MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH))
                     fail("Cannot commit extracted file: " + win_error(GetLastError()));
             } catch (...) { fs::remove(temp, ec); throw; }
@@ -311,7 +316,7 @@ void create_archive(const fs::path& source, const fs::path& destination,
     struct Source { fs::path disk; std::string name; std::vector<std::uint8_t> bytes; std::uint32_t size; std::uint64_t time; std::streampos patch; };
     std::vector<Source> files;
     for (auto const& item : fs::recursive_directory_iterator(source, fs::directory_options::skip_permission_denied)) {
-        if (item.is_symlink()) fail("Symbolic links are not supported: " + item.path().string());
+        if (item.is_symlink()) fail("Symbolic links are not supported: " + path_to_utf8(item.path()));
         if (!item.is_regular_file()) continue;
         auto size = item.file_size();
         if (size > std::numeric_limits<std::uint32_t>::max()) fail("A source file exceeds the PAK 32-bit limit");
@@ -342,7 +347,7 @@ void create_archive(const fs::path& source, const fs::path& destination,
             if (logical64 > std::numeric_limits<std::uint32_t>::max()) fail("Archive offsets exceed the PAK 32-bit limit");
             auto resume = out.tellp(); out.seekp(files[i].patch); write_le<std::uint32_t>(out, static_cast<std::uint32_t>(logical64)); out.seekp(resume);
             std::ifstream input(files[i].disk, std::ios::binary);
-            if (!input) fail("Cannot open source file: " + files[i].disk.string());
+            if (!input) fail("Cannot open source file: " + path_to_utf8(files[i].disk));
             while (input) {
                 input.read(reinterpret_cast<char*>(buffer.data()), buffer.size());
                 auto n = input.gcount(); if (!n) break;
