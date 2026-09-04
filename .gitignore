@@ -1,0 +1,13 @@
+# CMake and IDE output
+/build*/
+/out/
+/dist/
+/portable/
+/.vs/
+/CMakeUserPresets.json
+*.user
+
+# Runtime state and generated archives
+imgui.ini
+*.pak
+*.tmp
