@@ -8,6 +8,8 @@ zlib-compressed `PAKC` archives.
 ![C++20](https://img.shields.io/badge/C%2B%2B-20-00599C)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
+![pak-man browsing a Commandos: Strike Force archive](docs/images/pak-man.png)
+
 ## Features
 
 - Explorer-style ImGui browser with folders, breadcrumbs, search, sorting,
@@ -69,4 +71,3 @@ MIT. Dear ImGui and zlib retain their respective licenses; see
 This is an unofficial community tool and is not affiliated with or endorsed by
 the developers, publishers, or rights holders of Commandos: Strike Force. No
 game files or assets are included.
-
