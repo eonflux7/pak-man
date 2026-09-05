@@ -218,7 +218,8 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR command_line, int) {
                     status = "Creating archive...";
                     pakman::create_archive(source, target,
                         {.type = compressed_create ? pakman::ArchiveType::compressed : pakman::ArchiveType::stored,
-                         .platform = static_cast<pakman::Platform>(create_platform + 1)});
+                         .platform = static_cast<pakman::Platform>(create_platform + 1),
+                         .overwrite = true});
                     status = "Created " + utf8(target); open_archive(target);
                 } catch (std::exception const& e) { error_box(hwnd, e); status = "Create failed"; }
             }

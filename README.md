@@ -3,6 +3,7 @@
 Windows archive manager for **Commandos: Strike Force**.
 It can browse, verify, extract, and create both stored `PAKA` and
 zlib-compressed `PAKC` archives for retail PC, PlayStation 2, and Xbox.
+It also reads stored `PAKA` archives from the PS2 prototype.
 
 ![Windows](https://img.shields.io/badge/platform-Windows-0078D4)
 ![C++20](https://img.shields.io/badge/C%2B%2B-20-00599C)
@@ -17,6 +18,7 @@ zlib-compressed `PAKC` archives for retail PC, PlayStation 2, and Xbox.
 - Streaming extraction and packing; archives are not loaded fully into memory.
 - Full validation of indexes, offsets, zlib blocks, checksums, and output paths.
 - Windows-1252 filenames and original file timestamps.
+- Browsing, verification, and extraction of stored PS2 prototype v3 archives.
 - Safe temporary output and verification before a new archive is committed.
 - Companion CLI for automation.
 
@@ -58,11 +60,13 @@ cmake --install build --config Release --prefix portable
 pakman-cli list archive.pak
 pakman-cli verify archive.pak [--quick]
 pakman-cli extract archive.pak -o directory [--overwrite]
-pakman-cli create directory -o archive.pak [--type stored|compressed] [--platform pc|ps2|xbox]
+pakman-cli create directory -o archive.pak [--type stored|compressed] [--platform pc|ps2|xbox] [--overwrite]
 ```
 
-Archive creation refuses to overwrite an existing destination. Back up game
-files before installing a modified archive. PC is the default platform when
+The graphical save dialog can replace an existing archive after confirmation.
+The CLI requires `--overwrite` to replace an existing destination. The new
+archive is verified before the existing file is replaced. Back up game files
+before installing a modified archive. PC is the default platform when
 `--platform` is omitted.
 
 ## License

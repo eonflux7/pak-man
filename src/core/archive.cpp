@@ -21,6 +21,7 @@ namespace {
 
 constexpr std::uint32_t pc_retail_version = 5;
 constexpr std::uint32_t console_retail_version = 4;
+constexpr std::uint32_t ps2_prototype_version = 3;
 constexpr std::uint32_t retail_offset_correction = 13;
 
 std::uint32_t version_for(Platform platform) {
@@ -220,10 +221,13 @@ Archive Archive::open(const fs::path& path) {
     a.platform_ = read_le<std::uint32_t>(in);
     auto count = read_le<std::uint32_t>(in);
     auto platform = static_cast<Platform>(a.platform_);
+    bool ps2_prototype = a.type_ == ArchiveType::stored && platform == Platform::ps2 &&
+                         a.version_ == ps2_prototype_version;
     bool supported = (platform == Platform::pc && a.version_ == pc_retail_version) ||
                      ((platform == Platform::ps2 || platform == Platform::xbox) &&
-                      a.version_ == console_retail_version);
-    if (!supported) fail("Only retail PC v5 and PS2/Xbox v4 PAK archives are supported");
+                      a.version_ == console_retail_version) || ps2_prototype;
+    if (!supported) fail("Only retail PC v5, PS2/Xbox v4, and PS2 prototype v3 PAKA archives are supported");
+    auto offset_correction = ps2_prototype ? 0u : retail_offset_correction;
     auto archive_size = fs::file_size(path);
     if (count > archive_size / 17) fail("Impossible archive entry count");
     a.entries_.reserve(count);
@@ -247,10 +251,10 @@ Archive Archive::open(const fs::path& path) {
     a.data_base_ = static_cast<std::uint64_t>(pos);
     for (std::size_t i = 0; i < a.entries_.size(); ++i) {
         auto& e = a.entries_[i];
-        if (e.logical_offset < retail_offset_correction) fail("Invalid retail entry offset");
-        e.physical_offset = a.data_base_ + e.logical_offset - retail_offset_correction;
+        if (e.logical_offset < offset_correction) fail("Invalid archive entry offset");
+        e.physical_offset = a.data_base_ + e.logical_offset - offset_correction;
         auto next = i + 1 < a.entries_.size()
-                        ? a.data_base_ + a.entries_[i + 1].logical_offset - retail_offset_correction
+                        ? a.data_base_ + a.entries_[i + 1].logical_offset - offset_correction
                         : archive_size;
         if (e.physical_offset < a.data_base_ || next < e.physical_offset || next > archive_size)
             fail("Archive entry offset is out of bounds");
@@ -324,7 +328,7 @@ void Archive::extract(const fs::path& destination, std::span<const std::size_t> 
 void create_archive(const fs::path& source, const fs::path& destination,
                     const CreateOptions& options, Progress progress) {
     if (!fs::is_directory(source)) fail("Source is not a directory");
-    if (fs::exists(destination)) fail("Destination already exists");
+    if (fs::exists(destination) && !options.overwrite) fail("Destination already exists");
     auto platform = static_cast<std::uint32_t>(options.platform);
     if (options.platform != Platform::pc && options.platform != Platform::ps2 &&
         options.platform != Platform::xbox)
@@ -381,7 +385,13 @@ void create_archive(const fs::path& source, const fs::path& destination,
         }
         out.close();
         auto check = Archive::open(temp); check.verify(true);
-        fs::rename(temp, destination);
+        if (options.overwrite) {
+            if (!MoveFileExW(temp.c_str(), destination.c_str(),
+                             MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH))
+                fail("Cannot commit archive: " + win_error(GetLastError()));
+        } else {
+            fs::rename(temp, destination);
+        }
     } catch (...) { fs::remove(temp, ec); throw; }
 }
 

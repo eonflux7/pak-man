@@ -15,7 +15,7 @@ static void usage() {
         "  pakman-cli verify <archive.pak> [--quick]\n"
         "  pakman-cli extract <archive.pak> -o <directory> [--overwrite]\n"
         "  pakman-cli create <directory> -o <archive.pak> [--type stored|compressed]\n"
-        "                    [--platform pc|ps2|xbox]\n";
+        "                    [--platform pc|ps2|xbox] [--overwrite]\n";
 }
 
 static fs::path option_value(int argc, char** argv, std::string_view option) {
@@ -69,6 +69,8 @@ int main(int argc, char** argv) {
             if (platform == "ps2") options.platform = pakman::Platform::ps2;
             else if (platform == "xbox") options.platform = pakman::Platform::xbox;
             else if (!platform.empty() && platform != "pc") { usage(); return 1; }
+            for (int i = 3; i < argc; ++i)
+                if (std::string_view(argv[i]) == "--overwrite") options.overwrite = true;
             pakman::create_archive(fs::u8path(argv[2]), output, options, [](auto done, auto total, auto current) {
                 std::cerr << "\rPacked " << done << '/' << total << "  " << current.substr(0, 60) << "          ";
                 return true;

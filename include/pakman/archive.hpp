@@ -58,6 +58,7 @@ struct CreateOptions {
     ArchiveType type{ArchiveType::stored};
     Platform platform{Platform::pc};
     bool deterministic{true};
+    bool overwrite{false};
 };
 
 void create_archive(const std::filesystem::path& source_directory,
