@@ -154,6 +154,15 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR command_line, int) {
     IMGUI_CHECKVERSION(); ImGui::CreateContext();
     auto& io = ImGui::GetIO(); io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
     ImGui::StyleColorsDark();
+    auto& style = ImGui::GetStyle();
+    style.FrameRounding = 6.0f;
+
+    wchar_t windows_directory[MAX_PATH]{};
+    if (GetWindowsDirectoryW(windows_directory, MAX_PATH)) {
+        auto font_path = utf8(fs::path(windows_directory) / L"Fonts" / L"consola.ttf");
+        io.Fonts->AddFontFromFileTTF(font_path.c_str(), 14.0f, nullptr, io.Fonts->GetGlyphRangesCyrillic());
+    }
+    if (io.Fonts->Fonts.empty()) io.Fonts->AddFontDefault();
     ImGui_ImplWin32_Init(hwnd); ImGui_ImplDX11_Init(device, context);
 
     std::unique_ptr<pakman::Archive> archive;
