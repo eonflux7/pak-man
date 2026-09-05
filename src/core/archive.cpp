@@ -329,6 +329,10 @@ void create_archive(const fs::path& source, const fs::path& destination,
                     const CreateOptions& options, Progress progress) {
     if (!fs::is_directory(source)) fail("Source is not a directory");
     if (fs::exists(destination) && !options.overwrite) fail("Destination already exists");
+    if (options.ps2_prototype && options.platform != Platform::ps2)
+        fail("Prototype archive creation is only supported for PS2");
+    if (options.ps2_prototype && options.type != ArchiveType::stored)
+        fail("PS2 prototype archive creation only supports stored PAKA archives");
     auto platform = static_cast<std::uint32_t>(options.platform);
     if (options.platform != Platform::pc && options.platform != Platform::ps2 &&
         options.platform != Platform::xbox)
@@ -352,7 +356,8 @@ void create_archive(const fs::path& source, const fs::path& destination,
         std::ofstream out(temp, std::ios::binary | std::ios::trunc);
         if (!out) fail("Cannot create temporary archive");
         out.write(options.type == ArchiveType::stored ? "PAKA" : "PAKC", 4);
-        write_le<std::uint32_t>(out, version_for(options.platform)); write_le<std::uint32_t>(out, platform);
+        write_le<std::uint32_t>(out, options.ps2_prototype ? ps2_prototype_version : version_for(options.platform));
+        write_le<std::uint32_t>(out, platform);
         if (files.size() > std::numeric_limits<std::uint32_t>::max()) fail("Too many source files");
         write_le<std::uint32_t>(out, static_cast<std::uint32_t>(files.size()));
         for (auto& f : files) {
@@ -360,10 +365,11 @@ void create_archive(const fs::path& source, const fs::path& destination,
             f.patch = out.tellp(); write_le<std::uint32_t>(out, 0); write_le<std::uint32_t>(out, f.size); write_le<std::uint64_t>(out, f.time);
         }
         auto data_base = static_cast<std::uint64_t>(out.tellp());
+        auto offset_correction = options.ps2_prototype ? 0u : retail_offset_correction;
         std::array<unsigned char, 4096> buffer{};
         for (std::size_t i = 0; i < files.size(); ++i) {
             auto physical = static_cast<std::uint64_t>(out.tellp());
-            auto logical64 = physical - data_base + retail_offset_correction;
+            auto logical64 = physical - data_base + offset_correction;
             if (logical64 > std::numeric_limits<std::uint32_t>::max()) fail("Archive offsets exceed the PAK 32-bit limit");
             auto resume = out.tellp(); out.seekp(files[i].patch); write_le<std::uint32_t>(out, static_cast<std::uint32_t>(logical64)); out.seekp(resume);
             std::ifstream input(files[i].disk, std::ios::binary);

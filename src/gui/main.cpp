@@ -216,17 +216,21 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR command_line, int) {
                 auto target = dialog(hwnd, false, true);
                 if (!target.empty()) try {
                     status = "Creating archive...";
+                    bool prototype = create_platform == 3;
                     pakman::create_archive(source, target,
-                        {.type = compressed_create ? pakman::ArchiveType::compressed : pakman::ArchiveType::stored,
-                         .platform = static_cast<pakman::Platform>(create_platform + 1),
+                        {.type = compressed_create && !prototype ? pakman::ArchiveType::compressed : pakman::ArchiveType::stored,
+                         .platform = prototype ? pakman::Platform::ps2 : static_cast<pakman::Platform>(create_platform + 1),
+                         .ps2_prototype = prototype,
                          .overwrite = true});
                     status = "Created " + utf8(target); open_archive(target);
                 } catch (std::exception const& e) { error_box(hwnd, e); status = "Create failed"; }
             }
         }
-        ImGui::SameLine(); ImGui::Checkbox("Compressed PAKC", &compressed_create);
-        ImGui::SameLine(); ImGui::SetNextItemWidth(90.0f);
-        ImGui::Combo("Platform", &create_platform, "PC\0PS2\0Xbox\0");
+        if (create_platform == 3) compressed_create = false;
+        ImGui::SameLine(); ImGui::BeginDisabled(create_platform == 3);
+        ImGui::Checkbox("Compressed PAKC", &compressed_create); ImGui::EndDisabled();
+        ImGui::SameLine(); ImGui::SetNextItemWidth(125.0f);
+        ImGui::Combo("Platform", &create_platform, "PC\0PS2\0Xbox\0PS2 Prototype\0");
         std::size_t selected_count = 0;
         if (archive) {
             ImGui::SameLine();

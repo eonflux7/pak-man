@@ -62,11 +62,11 @@ uses 64-bit file APIs.
 | `0x0c` | 4 | `uint32` | Entry count |
 
 Version values documented by CommDevToolkit are prototype `3`, demo/console
-`4`, and retail PC `5`. The reader supports stored `PAKA` PS2 prototype
-(`3`, `2`) archives; the writer emits retail PC (`5`, `1`), PS2 (`4`, `2`),
-or Xbox (`4`, `3`) archives. The Xbox combination and layout were checked
-against a retail archive; PC demo formats and prototype writing remain
-unsupported.
+`4`, and retail PC `5`. The reader and writer support stored `PAKA` PS2
+prototype (`3`, `2`) archives. The writer also emits retail PC (`5`, `1`), PS2
+(`4`, `2`), or Xbox (`4`, `3`) archives. The Xbox combination and layout were
+checked against a retail archive; PC demo formats and compressed prototype
+writing remain unsupported.
 
 ### Index entry
 
@@ -186,8 +186,9 @@ An archive is valid for v1 only when all of the following hold:
   correctness, but a one-time in-game load test should be a release gate.
 - Retail console output follows the documented little-endian v4 layout and
   offset correction. PS2 and Xbox input are fixture-validated; generated output
-  still needs in-game smoke tests. PS2 prototype archives are read-only;
-  prototype writing and PC demo formats remain outside scope.
+  still needs in-game smoke tests. Generated stored PS2 prototype archives need
+  the same in-game validation; compressed prototype writing and PC demo formats
+  remain outside scope.
 - The engine's lookup rule for truly different duplicate entries is not proven.
   Preserve order and duplicates in manifests; do not silently invent a winner.
 - Timestamps appear to be creation times in the reference implementation, but

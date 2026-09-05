@@ -94,6 +94,30 @@ int main() {
         assert(read(prototype_output / "Maps" / "ST04.txt") == "prototype");
         assert(read(prototype_output / "Maps" / "data.bin") == std::string("\x00\x01\x02\x03", 4));
 
+        auto generated_prototype = root / "generated-ps2-prototype.pak";
+        pakman::create_archive(root / "input", generated_prototype,
+                               {.platform = pakman::Platform::ps2, .ps2_prototype = true});
+        auto generated_archive = pakman::Archive::open(generated_prototype);
+        assert(generated_archive.type() == pakman::ArchiveType::stored);
+        assert(generated_archive.version() == 3);
+        assert(generated_archive.platform() == static_cast<std::uint32_t>(pakman::Platform::ps2));
+        assert(generated_archive.entries().size() == 3);
+        assert(generated_archive.entries().front().logical_offset == 0);
+        generated_archive.verify(true);
+        auto generated_output = root / "generated-prototype-out";
+        generated_archive.extract(generated_output);
+        assert(read(generated_output / "hello.txt") == read(root / "input" / "hello.txt"));
+        assert(read(generated_output / "Gfx" / "blocks.bin") == read(root / "input" / "Gfx" / "blocks.bin"));
+
+        bool refused_compressed_prototype = false;
+        try {
+            pakman::create_archive(root / "input", root / "invalid-prototype.pak",
+                                   {.type = pakman::ArchiveType::compressed,
+                                    .platform = pakman::Platform::ps2,
+                                    .ps2_prototype = true});
+        } catch (std::exception const&) { refused_compressed_prototype = true; }
+        assert(refused_compressed_prototype);
+
         fs::remove_all(root);
         std::cout << "round-trip tests passed\n";
         return 0;

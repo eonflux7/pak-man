@@ -19,6 +19,7 @@ It also reads stored `PAKA` archives from the PS2 prototype.
 - Full validation of indexes, offsets, zlib blocks, checksums, and output paths.
 - Windows-1252 filenames and original file timestamps.
 - Browsing, verification, and extraction of stored PS2 prototype v3 archives.
+- Creation of stored PS2 prototype archives for testing in prototype builds.
 - Safe temporary output and verification before a new archive is committed.
 - Companion CLI for automation.
 
@@ -60,7 +61,7 @@ cmake --install build --config Release --prefix portable
 pakman-cli list archive.pak
 pakman-cli verify archive.pak [--quick]
 pakman-cli extract archive.pak -o directory [--overwrite]
-pakman-cli create directory -o archive.pak [--type stored|compressed] [--platform pc|ps2|xbox] [--overwrite]
+pakman-cli create directory -o archive.pak [--type stored|compressed] [--platform pc|ps2|xbox|ps2-prototype] [--overwrite]
 ```
 
 The graphical save dialog can replace an existing archive after confirmation.
@@ -68,6 +69,10 @@ The CLI requires `--overwrite` to replace an existing destination. The new
 archive is verified before the existing file is replaced. Back up game files
 before installing a modified archive. PC is the default platform when
 `--platform` is omitted.
+
+Use `--platform ps2-prototype` to create a stored `PAKA` archive with the PS2
+prototype version and offset layout. Compressed prototype creation is rejected
+because it has not been validated against a genuine prototype `PAKC` archive.
 
 ## License
 

@@ -57,6 +57,7 @@ private:
 struct CreateOptions {
     ArchiveType type{ArchiveType::stored};
     Platform platform{Platform::pc};
+    bool ps2_prototype{false};
     bool deterministic{true};
     bool overwrite{false};
 };

@@ -15,7 +15,7 @@ static void usage() {
         "  pakman-cli verify <archive.pak> [--quick]\n"
         "  pakman-cli extract <archive.pak> -o <directory> [--overwrite]\n"
         "  pakman-cli create <directory> -o <archive.pak> [--type stored|compressed]\n"
-        "                    [--platform pc|ps2|xbox] [--overwrite]\n";
+        "                    [--platform pc|ps2|xbox|ps2-prototype] [--overwrite]\n";
 }
 
 static fs::path option_value(int argc, char** argv, std::string_view option) {
@@ -66,16 +66,18 @@ int main(int argc, char** argv) {
             if (type == "compressed") options.type = pakman::ArchiveType::compressed;
             else if (!type.empty() && type != "stored") { usage(); return 1; }
             auto platform = option_value(argc, argv, "--platform").string();
-            if (platform == "ps2") options.platform = pakman::Platform::ps2;
+            if (platform == "ps2" || platform == "ps2-prototype") options.platform = pakman::Platform::ps2;
             else if (platform == "xbox") options.platform = pakman::Platform::xbox;
             else if (!platform.empty() && platform != "pc") { usage(); return 1; }
+            options.ps2_prototype = platform == "ps2-prototype";
             for (int i = 3; i < argc; ++i)
                 if (std::string_view(argv[i]) == "--overwrite") options.overwrite = true;
             pakman::create_archive(fs::u8path(argv[2]), output, options, [](auto done, auto total, auto current) {
                 std::cerr << "\rPacked " << done << '/' << total << "  " << current.substr(0, 60) << "          ";
                 return true;
             });
-            std::cerr << "\nCreated " << pakman::platform_name(options.platform) << " archive " << output.string() << '\n';
+            std::cerr << "\nCreated " << (options.ps2_prototype ? "PS2 prototype" : pakman::platform_name(options.platform))
+                      << " archive " << output.string() << '\n';
         } else { usage(); return 1; }
         return 0;
     } catch (std::exception const& e) {
