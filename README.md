@@ -1,4 +1,4 @@
-# pak-man
+# CSF pak-man
 
 Windows archive manager for **Commandos: Strike Force**.
 It can browse, verify, extract, and create both stored `PAKA` and
@@ -9,7 +9,7 @@ It also reads stored `PAKA` archives from the PS2 prototype.
 ![C++20](https://img.shields.io/badge/C%2B%2B-20-00599C)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
-![pak-man browsing a Commandos: Strike Force archive](docs/images/pak-man.png)
+![CSF pak-man browsing a Commandos: Strike Force archive](docs/images/pak-man.png)
 
 ## Features
 
