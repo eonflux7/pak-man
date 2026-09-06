@@ -9,7 +9,7 @@ It also reads stored `PAKA` archives from the PS2 prototype.
 ![C++20](https://img.shields.io/badge/C%2B%2B-20-00599C)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
-![CSF pak-man browsing a Commandos: Strike Force archive](docs/images/pak-man.png)
+![CSF pak-man browsing a Commandos: Strike Force archive](docs/images/csf-pak-man.png)
 
 ## Features
 
