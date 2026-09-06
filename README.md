@@ -1,4 +1,4 @@
-# CSF pak-man
+# csf-pak-man
 
 Windows archive manager for **Commandos: Strike Force**.
 It can browse, verify, extract, and create both stored `PAKA` and
